@@ -49,12 +49,13 @@ import {
 // Go to: Project Settings → General → Your apps → Web app
 // ============================================================
 const firebaseConfig = {
-  apiKey:            'YOUR_API_KEY',
-  authDomain:        'YOUR_PROJECT_ID.firebaseapp.com',
-  projectId:         'YOUR_PROJECT_ID',
-  storageBucket:     'YOUR_PROJECT_ID.firebasestorage.app',
-  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-  appId:             'YOUR_APP_ID'
+  apiKey: "AIzaSyD6Ut3iVrCarvYQXajDaT9310-fQ9XwX2w",
+  authDomain: "climb-d09e0.firebaseapp.com",
+  projectId: "climb-d09e0",
+  storageBucket: "climb-d09e0.firebasestorage.app",
+  messagingSenderId: "129700664600",
+  appId: "1:129700664600:web:ff0115d8978696ba193a6d",
+  measurementId: "G-B5NMWKEZZ2"
 };
 
 // ── Initialize Firebase services ──

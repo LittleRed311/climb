@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Profile documents ──
+    // Path: /profiles/{profileId}
+    // profileId MUST equal the user's auth UID
+    match /profiles/{profileId} {
+
+      // Anyone authenticated can read any profile (needed for matchups + leaderboards)
+      allow read: if request.auth != null;
+
+      // Only the owner can CREATE their profile, with validated initial values
+      allow create: if request.auth != null
+                    && request.auth.uid == profileId
+                    // Enforce starting Elo
+                    && request.resource.data.eloRating == 1200
+                    // Enforce zeroed win/loss counters
+                    && request.resource.data.wins == 0
+                    && request.resource.data.losses == 0
+                    // Require mandatory fields exist
+                    && request.resource.data.keys().hasAll([
+                         'uid', 'username', 'photoURL', 'eloRating',
+                         'wins', 'losses', 'lat', 'lng', 'geohash',
+                         'state', 'randomWeight', 'createdAt'
+                       ])
+                    // randomWeight must be between 0 and 1
+                    && request.resource.data.randomWeight >= 0
+                    && request.resource.data.randomWeight <= 1;
+
+      // Owner can update their OWN non-rating fields (e.g. username, photo)
+      // They CANNOT change their own rating/wins/losses via this rule
+      allow update: if request.auth != null
+                    && request.auth.uid == profileId
+                    && !request.resource.data.diff(resource.data).affectedKeys()
+                        .hasAny(['eloRating', 'wins', 'losses']);
+
+      // VOTING: Other authenticated users can update ONLY rating fields
+      // with strict constraints to prevent abuse
+      allow update: if request.auth != null
+                    && request.auth.uid != profileId
+                    // Only these three fields may change
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['eloRating', 'wins', 'losses'])
+                    // Elo change capped at K-factor of 32
+                    && math.abs(request.resource.data.eloRating - resource.data.eloRating) <= 32
+                    // Either wins goes up by 1 (winner) or losses goes up by 1 (loser)
+                    && (
+                         (request.resource.data.wins == resource.data.wins + 1
+                          && request.resource.data.losses == resource.data.losses)
+                         ||
+                         (request.resource.data.losses == resource.data.losses + 1
+                          && request.resource.data.wins == resource.data.wins)
+                       );
+
+      // No one can delete profiles
+      allow delete: if false;
+    }
+
+    // Deny all access to any other collections by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
